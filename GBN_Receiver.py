@@ -37,13 +37,40 @@ class R_receiver:
         # method.
         # TODO: If the packet is correct, deliver to layer 5 and take the 
         # necessary actions as descriped in the FSM.
+
+        # If the packet is received correctly (no corruption, correct sequence number), 
+        # pass it to layer 5 
+        if ((received_packet.checksum == received_packet.get_checksum()) and (received_packet.seqnum == self.seqnum)):
+            to_layer_five(self.entity, received_packet.payload.data)
+            
+            # If receiver does not buffer out of order packets, 
+            # then it will wait for all packets to be retransmitted
+            # then only send one cumulative ACK?  
+            send_ack(self.entity, self.seqnum) # Send an ACK packet to the Sender 
+            sim.totalMsgSent+=1 
+
+        # When receive out of order/corrupted packets
+        else:
+            # Update relevant simulation counters when packet is corrupt 
+            if ((received_packet.checksum != received_packet.get_checksum())):
+                sim.corruptedData+=1
+                sim.corruptedTotal+=1
+                sim.droppedData+=1
+                sim.droppedTotal+=1
+            
+            # Received out of order packets
+            else:
+                # wait for all packets to be retransmitted 
+                # Send cumulative ACK of last received packet 
+                send_ack(self.entity, self.seqnum)
+                sim.totalMsgSent+=1
+                sim.retransmittedAck+=1
+                sim.retransmittedTotal+=1
+
         
-
-
-        # If receiver does not bugger out of order packets, 
-        # then it will wait for all packets to be retransmitted
-        # then only send one cumulative ACK?  
-
+        # Update sequence number to the next expected 
+            self.seqnum+=1 
+       
 
         return
 
