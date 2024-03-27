@@ -26,12 +26,17 @@ class S_sender:
         # unacknowledged packets.
         self.c_b = circular_buffer(8)
 
+
         # TODO: Initialize any other useful class variables you can think of.
         
         # First sent but unACKed pkt, move forward when ACK'ed
+        # Expected ACK 
         self.base = 0
         # For retransmitting lost packet
         self.lost_packet = None
+        # List representing current state of window (expected ACK to receive)
+        # self.window= []
+
 
         return
 
@@ -61,7 +66,6 @@ class S_sender:
         # Circular buffer is not full, send message to receiver 
         if ((not self.c_b.isfull()) and (self.seq < (self.base + self.c_b.max))):
     
-        
             # Make packet with message and sequence number 
             new_packet = packet(seqnum = self.seq, payload = message)
             self.lost_packet = new_packet # for retransmission when timeout 
@@ -73,9 +77,9 @@ class S_sender:
             if (self.base == self.seq):
                 # Timer for oldest transmitted but not yet ACKed packet 
                 evl.start_timer(self.entity, self.estimated_rtt)
-                
+
             # Sequence number of next packet to be sent 
-            self.seq+=1
+            self.seq = (self.seq + 1) % 9
           
             
         # Drop message when sender is waiting for an ACK or the buffer is full (pg 11)
@@ -110,20 +114,48 @@ class S_sender:
         # ACKs meaning that more than one packet may need to be removed 
         # from the circular buffer.
 
-            # Base increase when received ACK
+        # Use read_all and form actual window 
+        # and compare sequence number of packets 
+        
+        # Verify the received packet's checksum to make sure that it's
+        # uncorrupted and it's acknowledgment number to see whether it is 
+        # within the Sender's window.
+        if ((received_packet.checksum == received_packet.get_checksum()) and (received_packet.acknum <= self.c_b.count)):
+            window = [] 
+            # Firt case: Received ACK > expected ACK 
+            if (self.base < received_packet.acknum):
+                window = self.c_b.read_all() # List containing all packets 
+
+
+            # Update the circular buffer based on the 
+            # received acknowledgment number using pop().
+                if (window)
+                self.c_b.pop()
+
+
+            # Go-Back-N uses cumulative ACKs meaning that more than 
+            # one packet may need to be removed from the circular buffer.
+
+                # Base increased to next expected sequence number 
+                self.base = received_packet.acknum + 1
 
 
            # Move window up when received ACK
             # self.c_b.push(new_packet)
 
-          # If ACK received but there still packets unACKed, 
-            # then, the timer should be removed and restarted 
-
-
             # If no outstanding unACKed packets, then timer is removed
-
+            if (self.base == self.seq):
+                evl.remove_timer() 
+            # If ACK received but there still packets unACKed, 
+            # then, the timer should be removed and restarted 
+            else: 
+                evl.remove_timer()
+                # evl.start_timer(received_packet)
+         
 
             # Deal with out of order packets by your own implementation
+        
+
         return
 
 
@@ -136,14 +168,20 @@ class S_sender:
         # Check the FSM to know the actions to take and review section 2.5.2 
         # Software Interfaces and 2.5.4 Helpful Hints in the Project Instructions
         # for how to use each method and how to handle timers.
-        # TODO: Send all the unACKed packets in the circular buffer.
 
-
+        
         # Do not need a timer for each packet in window 
 
         # But there may be outstanding unACK paackets in network 
         # (need think about how to use one timer)
-        
+
+
+        evl.start_timer(self.entity, self.estimated_rtt)
+        # TODO: Send all the unACKed packets in the circular buffer.
+        for i in range(self.base, self.seq):
+            to_layer_three(self.entity, self.c_b.read_all[i])
+
+
         return
 
 a = S_sender()
