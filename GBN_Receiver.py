@@ -37,6 +37,13 @@ class R_receiver:
         # method.
         # TODO: If the packet is correct, deliver to layer 5 and take the 
         # necessary actions as descriped in the FSM.
+        
+
+
+        # If receiver does not bugger out of order packets, 
+        # then it will wait for all packets to be retransmitted
+        # then only send one cumulative ACK?  
+
 
         return
 
