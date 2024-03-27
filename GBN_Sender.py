@@ -121,30 +121,45 @@ class S_sender:
         # uncorrupted and it's acknowledgment number to see whether it is 
         # within the Sender's window.
         if ((received_packet.checksum == received_packet.get_checksum()) and (received_packet.acknum <= self.c_b.count)):
-            window = [] 
+            window = []
+            window = self.c_b.read_all() # Window is list of packets 
+            # Store package seq num in list 
+            seqnum_list = [package.seqnum for package in window] 
+
             # Firt case: Received ACK > expected ACK 
             if (self.base < received_packet.acknum):
-                window = self.c_b.read_all() # List containing all packets 
+                # Update the circular buffer based on the 
+                # received acknowledgment number using pop().
+                # Go-Back-N uses cumulative ACKs meaning that more than 
+                # one packet may need to be removed from the circular buffer.
+                for i in range(self.base, received_packet.acknum + 1):
+                    # Packet removed
+                    self.c_b.pop()
+                   
 
+                
+                # # Rearrange buffer so empty space would be at the end of the list 
+                # # This would mess up counters..do i update them?
+                # self.c_b.buffer += [None] * ((received_packet + 1) - self.base)
+                # # Update count buffer
+                # self.count = len([x for x in self.c_b.buffer if x is not None])
+                # # Update write
+                # Move window up when received ACK ?
 
-            # Update the circular buffer based on the 
-            # received acknowledgment number using pop().
-                # for i in range(self.base, received_packet.acknum + 1):
-                #     if (self.c_b.pop())
-                #     self.c_b.pop()
+            # Second case: Received ACK that is smaller than base but
+            # in sliding window (eg: base:3, ack: 0)
+            elif (self.base > received_packet.acknum) and (received_packet.acknum in seqnum_list):
+                for i in range(self.base, ((received_packet.acknum + 9) - self.base + 2)):
+                    # Packet removed
+                    self.c_b.pop()
 
-            # Solution: pop, move one up, so can add, rearrange buffer so empty space @ back 
-                    
-            # Go-Back-N uses cumulative ACKs meaning that more than 
-            # one packet may need to be removed from the circular buffer.
-
-                # Base increased to next expected sequence number 
-                self.base = received_packet.acknum + 1
-
-
-           # Move window up when received ACK
-            # self.c_b.push(new_packet)
-
+          
+                
+            # Base increased to next expected sequence number 
+            self.base = received_packet.acknum + 1
+            
+           
+                
             # If no outstanding unACKed packets, then timer is removed
             if (self.base == self.seq):
                 evl.remove_timer() 
