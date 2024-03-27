@@ -129,10 +129,12 @@ class S_sender:
 
             # Update the circular buffer based on the 
             # received acknowledgment number using pop().
-                if (window)
-                self.c_b.pop()
+                for i in range(self.base, received_packet.acknum + 1):
+                    if (self.c_b.pop())
+                    self.c_b.pop()
 
-
+                #pop, move one up, so can add, rearrange buffer so empty space @ back 
+                    
             # Go-Back-N uses cumulative ACKs meaning that more than 
             # one packet may need to be removed from the circular buffer.
 
