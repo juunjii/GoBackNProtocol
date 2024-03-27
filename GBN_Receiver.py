@@ -20,6 +20,10 @@ class R_receiver:
         # This should be used as the first argument to to_layer_five() and 
         # send_ack().
         self.entity = 'R'
+        # Counter for packet received 
+        self.count = 0
+        # NAK
+        self.nak = 0
         return
 
     def R_input(self, received_packet):
@@ -41,35 +45,67 @@ class R_receiver:
         # If the packet is received correctly (no corruption, correct sequence number), 
         # pass it to layer 5 
         if ((received_packet.checksum == received_packet.get_checksum()) and (received_packet.seqnum == self.seqnum)):
+            self.count+=1
+            # print("Enter R_input if statement")
             to_layer_five(self.entity, received_packet.payload.data)
-            
             # If receiver does not buffer out of order packets, 
             # then it will wait for all packets to be retransmitted
             # then only send one cumulative ACK?  
             send_ack(self.entity, self.seqnum) # Send an ACK packet to the Sender 
             sim.totalMsgSent+=1 
+            # Update sequence number to the next expected 
+            self.seqnum = (self.seqnum + 1) % 9
 
         # When receive out of order/corrupted packets
         else:
+            print("Packet received out of order/corrupted")
+            sim.totalMsgSent+=1
+            sim.retransmittedAck+=1
+            sim.retransmittedTotal+=1
+            sim.droppedData+=1
+            sim.droppedTotal+=1
+
             # Update relevant simulation counters when packet is corrupt 
             if ((received_packet.checksum != received_packet.get_checksum())):
                 sim.corruptedData+=1
                 sim.corruptedTotal+=1
-                sim.droppedData+=1
-                sim.droppedTotal+=1
             
             # Received out of order packets
-            else:
-                # wait for all packets to be retransmitted 
-                # Send cumulative ACK of last received packet 
-                send_ack(self.entity, self.seqnum)
-                sim.totalMsgSent+=1
-                sim.retransmittedAck+=1
-                sim.retransmittedTotal+=1
+            # else:
+            #     sim.totalMsgSent+=1
+            #     sim.retransmittedAck+=1
+            #     sim.retransmittedTotal+=1
+            #     sim.droppedData+=1
+            #     sim.droppedTotal+=1
+
+            # Wait for all packets to be retransmitted 
+            # Send cumulative ACK of last received packet 
+            
+            # Case 1: Check when it is first packet, just send 0
+            if self.count == 0:
+                self.nak = 0 
+                send_ack(self.entity, self.nak) 
+
+
+            # Case 2: When not first packet and when seqnum is 0, previous ACK would be 8
+            # Next expected ack is 0, so previous ACK is 8 
+            elif (self.count > 0 and self.seqnum == 0):
+                self.nak = 8
+                send_ack(self.entity, self.nak) 
+            
+            # Send previous ACK
+            else: 
+                send_ack(self.entity, self.seqnum -1) 
+                
+                
+
+
+
+           
 
         
-        # Update sequence number to the next expected 
-            self.seqnum+=1 
+     
+
        
 
         return
