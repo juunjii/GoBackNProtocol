@@ -124,19 +124,21 @@ class S_sender:
         # Verify the received packet's checksum to make sure that it's
         # uncorrupted and it's acknowledgment number to see whether it is 
         # within the Sender's window.
-        if (received_packet.checksum == received_packet.get_checksum()):
+          # print("Entered S_input")
+        
+        window = self.c_b.read_all() # Window is list of packets 
+        # Store package seq num in list 
+        # print("window: ")
+        # print(window)
+        self.seqnum_list = [package.seqnum for package in window] 
+        print("seqnum_list: " + str(self.seqnum_list))
+        print("Length of seqnum_list: " + str(len(self.seqnum_list)))
+
+        if (received_packet.checksum == received_packet.get_checksum()) and (received_packet.acknum in self.seqnum_list):
             print("ACK received: " + str(received_packet.acknum))
             print("Circular buffer size: " + str(self.c_b.count))
             
-            # print("Entered S_input")
-            window = self.c_b.read_all() # Window is list of packets 
-            # Store package seq num in list 
-            # print("window: ")
-            # print(window)
-            self.seqnum_list = [package.seqnum for package in window] 
-            print("seqnum_list: " + str(self.seqnum_list))
-            print("Length of seqnum_list: " + str(len(self.seqnum_list)))
-
+          
             # Case when r
             if (self.base == received_packet.acknum):
                     print("base = acknum")
@@ -167,7 +169,8 @@ class S_sender:
             # in sliding window (eg: base:3, ack: 0)
             elif (self.base > received_packet.acknum) and (received_packet.acknum in self.seqnum_list):
                 print("base > acknum")
-                for i in range(self.base, ((received_packet.acknum + 9) - self.base + 2)):
+                # for i in range(self.base, ((received_packet.acknum + 9) - self.base + 2)):
+                for i in range(self.base, ((self.c_b.max + 1) - self.base + 2)):
                     # Packet removed
                     # print("Second case buffer state:")
                     self.c_b.pop()
@@ -223,7 +226,7 @@ class S_sender:
 
         # But there may be outstanding unACK paackets in network 
         # (need think about how to use one timer)
-
+        print("In handle timer")
 
         evl.start_timer(self.entity, self.estimated_rtt)
         # TODO: Send all the unACKed packets in the circular buffer.

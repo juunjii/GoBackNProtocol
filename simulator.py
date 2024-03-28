@@ -21,10 +21,10 @@ class simulator:
         self.TRACE = 0  # For debugging.
         self.nsim = 0   # The number of messages passed down from layer 5 to 
                         # layer 4 so far.
-        self.nsimmax = 10  # The number of messages to generate, then stop the
+        self.nsimmax = 5  # The number of messages to generate, then stop the
                            # simulation.
         self.time = 0.0
-        self.lossprob = 0.3 # The probability that a packet is dropped. 
+        self.lossprob = 0.2 # The probability that a packet is dropped. 
         self.corruptprob = 0.3  # The probability that one bit in a packet is 
                                 # flipped / corrupted.
         self.Lambda = 1000  # The arrival rate of messages from layer 5.
