@@ -133,7 +133,7 @@ class S_sender:
         self.seqnum_list = [package.seqnum for package in window] 
         print("seqnum_list: " + str(self.seqnum_list))
         print("Length of seqnum_list: " + str(len(self.seqnum_list)))
-
+        #
         if (received_packet.checksum == received_packet.get_checksum()) and (received_packet.acknum in self.seqnum_list):
             print("ACK received: " + str(received_packet.acknum))
             print("Circular buffer size: " + str(self.c_b.count))
