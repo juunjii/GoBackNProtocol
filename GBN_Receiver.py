@@ -56,9 +56,12 @@ class R_receiver:
             # Update sequence number to the next expected 
             self.seqnum = (self.seqnum + 1) % 9
 
+        if (received_packet.seqnum != self.seqnum):
+            print("Data packet received out of order")
+            
         # When receive out of order/corrupted packets
         else:
-            print("Packet received out of order/corrupted")
+            print("Data packet corrupted")
             sim.totalMsgSent+=1
             sim.retransmittedAck+=1
             sim.retransmittedTotal+=1
@@ -96,17 +99,6 @@ class R_receiver:
             # Send previous ACK
             else: 
                 send_ack(self.entity, self.seqnum -1) 
-                
-                
-
-
-
-           
-
-        
-     
-
-       
 
         return
 

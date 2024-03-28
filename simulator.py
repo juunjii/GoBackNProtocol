@@ -24,10 +24,10 @@ class simulator:
         self.nsimmax = 10  # The number of messages to generate, then stop the
                            # simulation.
         self.time = 0.0
-        self.lossprob = 0.2 # The probability that a packet is dropped. 
-        self.corruptprob = 0.2  # The probability that one bit in a packet is 
+        self.lossprob = 0.3 # The probability that a packet is dropped. 
+        self.corruptprob = 0.3  # The probability that one bit in a packet is 
                                 # flipped / corrupted.
-        self.Lambda = 10000  # The arrival rate of messages from layer 5.
+        self.Lambda = 1000  # The arrival rate of messages from layer 5.
         self.ntolayer3 = 0  # The number of packets sent to layer 3 so far.
         self.nlost = 0  # The number of packets lost in media / the network.
         self.ncorrupt = 0  # The number of packets corrupted by media / the
