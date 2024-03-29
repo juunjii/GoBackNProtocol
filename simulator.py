@@ -10,7 +10,6 @@ from event import *
 import random
 import copy
 
-# 
 class simulator:
     ''' Simulates a network's behavior. '''
     def __init__(self):
@@ -21,11 +20,11 @@ class simulator:
         self.TRACE = 0  # For debugging.
         self.nsim = 0   # The number of messages passed down from layer 5 to 
                         # layer 4 so far.
-        self.nsimmax = 5  # The number of messages to generate, then stop the
+        self.nsimmax = 30  # The number of messages to generate, then stop the
                            # simulation.
         self.time = 0.0
-        self.lossprob = 0.2 # The probability that a packet is dropped. 
-        self.corruptprob = 0.3  # The probability that one bit in a packet is 
+        self.lossprob = 0.2 # The probability that a packet is dropped.
+        self.corruptprob = 0.0  # The probability that one bit in a packet is 
                                 # flipped / corrupted.
         self.Lambda = 1000  # The arrival rate of messages from layer 5.
         self.ntolayer3 = 0  # The number of packets sent to layer 3 so far.
@@ -40,6 +39,9 @@ class simulator:
         self.retransmittedData=0
         self.retransmittedAck=0
         self.retransmittedTotal=0
+        self.lostData=0
+        self.lostACK=0
+        self.lostTotal=0
         self.droppedData=0
         self.droppedAck=0
         self.droppedTotal=0
@@ -66,11 +68,19 @@ class simulator:
                 print("simulation complete")
                 
                 self.endTime=self.time
+                self.retransmittedTotal = self.retransmittedData + self.retransmittedAck
+                self.lostTotal = self.lostData + self.lostACK
+                self.droppedTotal = self.droppedData + self.droppedAck
+                self.corruptedTotal = self.corruptedData + self.corruptedAck
+
                 print("===========STATISTICS==========");
                 print(" Total Number of Messages Sent                 -> ", self.totalMsgSent)
                 print(" Total Number of Retransmissions               -> ", self.retransmittedTotal)
                 print("   Total Number of Retransmitted Data Packets  -> ", self.retransmittedData)
                 print("   Total Number of Retransmitted ACKs          -> ", self.retransmittedAck)
+                print(" Total Number of Lost Packets                  -> ", self.lostTotal)
+                print("   Total Number of Lost Data Packets           -> ", self.lostData)
+                print("   Total Number of Lost ACKs                   -> ", self.lostACK)
                 print(" Total Number of Dropped Packets               -> ", self.droppedTotal)
                 print("   Total Number of Dropped Data Packets        -> ", self.droppedData)
                 print("   Total Number of Dropped ACKs                -> ", self.droppedAck)
@@ -148,6 +158,12 @@ def to_layer_three(calling_entity, packet):
         - The packet that is being sent to layer 3.
     '''
     if (random.uniform(0, 1) < sim.lossprob):
+        if (calling_entity == "S"):
+            sim.lostData += 1
+            print("Data packet is lost" + str(packet.seqnum))
+        else: 
+            sim.lostACK += 1 
+            print("ACK is lost" + str(packet.acknum))
         return
 
     pkt = copy.deepcopy(packet)

@@ -24,6 +24,8 @@ class R_receiver:
         self.count = 0
         # NAK
         self.nak = 0
+        # Max window size 
+        self.max_window_size = 8
         return
 
     def R_input(self, received_packet):
@@ -36,15 +38,14 @@ class R_receiver:
         - received_packet : packet
             - The received packet that was sent by the Sender.
         ''' 
-        # Check the FSM to know the actions to take and review section 2.5.2 
-        # Software Interfaces in the Project Instructions for how to use each 
-        # method.
+      
         # TODO: If the packet is correct, deliver to layer 5 and take the 
         # necessary actions as descriped in the FSM.
 
-        # If the packet is received correctly (no corruption, correct sequence number), 
+        # If the packet is received correctly (no corruption, expected sequence number), 
         # pass it to layer 5 
         if ((received_packet.checksum == received_packet.get_checksum()) and (received_packet.seqnum == self.seqnum)):
+
             self.count+=1
             # print("Enter R_input if statement")
             to_layer_five(self.entity, received_packet.payload.data)
@@ -54,14 +55,12 @@ class R_receiver:
             send_ack(self.entity, self.seqnum) # Send an ACK packet to the Sender 
             sim.totalMsgSent+=1 
             # Update sequence number to the next expected 
-            self.seqnum = (self.seqnum + 1) % 9
+            self.seqnum = (self.seqnum + 1) % (self.max_window_size + 1)
 
-        if (received_packet.seqnum != self.seqnum):
-            print("Data packet received out of order")
+        
             
         # When receive out of order/corrupted packets
         else:
-            print("Data packet corrupted")
             sim.totalMsgSent+=1
             sim.retransmittedAck+=1
             sim.retransmittedTotal+=1
@@ -70,36 +69,32 @@ class R_receiver:
 
             # Update relevant simulation counters when packet is corrupt 
             if ((received_packet.checksum != received_packet.get_checksum())):
+                # print("Data packet corrupted")
                 sim.corruptedData+=1
                 sim.corruptedTotal+=1
+
+            if (received_packet.seqnum != self.seqnum):
+                print("Data packet received out of order")
             
-            # Received out of order packets
-            # else:
-            #     sim.totalMsgSent+=1
-            #     sim.retransmittedAck+=1
-            #     sim.retransmittedTotal+=1
-            #     sim.droppedData+=1
-            #     sim.droppedTotal+=1
+            
 
             # Wait for all packets to be retransmitted 
             # Send cumulative ACK of last received packet 
             
-            # Case 1: Check when it is first packet, just send 0
+            # Case 1: Check when it is first packet that's corrupted, just return
             if self.count == 0:
-                self.nak = 0 
-                send_ack(self.entity, self.nak) 
-
-
+                return
+            
             # Case 2: When not first packet and when seqnum is 0, previous ACK would be 8
             # Next expected ack is 0, so previous ACK is 8 
-            elif (self.count > 0 and self.seqnum == 0):
-                self.nak = 8
+            elif ((self.count > 0) and (self.seqnum == 0)):
+                self.nak = self.max_window_size
                 send_ack(self.entity, self.nak) 
             
             # Send previous ACK
             else: 
                 send_ack(self.entity, self.seqnum -1) 
-
+            
         return
 
 b = R_receiver()

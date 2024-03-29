@@ -65,15 +65,15 @@ class S_sender:
         # Send messages up to window size
         # Circular buffer is not full, send message to receiver 
         if ((not self.c_b.isfull())):
-            print("Buffer size when send to layer3: " + str(self.c_b.count))
+            # print("Buffer size when send to layer3: " + str(self.c_b.count))
             # Make packet with message and sequence number 
             new_packet = packet(seqnum = self.seq, payload = message)
-            print("Sequence number of current packet: " + str(self.seq))
+            # print("Sequence number of current packet: " + str(self.seq))
             # Send the packet to the Receiver.
             to_layer_three(self.entity, new_packet)
             sim.totalMsgSent +=1
             self.c_b.push(new_packet) 
-            print("Buffer size after adding new packet: " + str(self.c_b.count))
+            # print("Buffer size after adding new packet: " + str(self.c_b.count))
            
         
             if (self.base == self.seq):
@@ -82,7 +82,7 @@ class S_sender:
 
             # Sequence number of next packet to be sent 
             self.seq = (self.seq + 1) % 9
-            print("Sequence number of next packet to send: " + str(self.seq))
+            # print("Sequence number of next packet to send: " + str(self.seq))
 
           
             
@@ -131,17 +131,17 @@ class S_sender:
         # print("window: ")
         # print(window)
         self.seqnum_list = [package.seqnum for package in window] 
-        print("seqnum_list: " + str(self.seqnum_list))
-        print("Length of seqnum_list: " + str(len(self.seqnum_list)))
+        # print("seqnum_list: " + str(self.seqnum_list))
+        # print("Length of seqnum_list: " + str(len(self.seqnum_list)))
         
         if (received_packet.checksum == received_packet.get_checksum()) and (received_packet.acknum in self.seqnum_list):
-            print("ACK received: " + str(received_packet.acknum))
-            print("Circular buffer size: " + str(self.c_b.count))
+            # print("ACK received: " + str(received_packet.acknum))
+            # print("Circular buffer size: " + str(self.c_b.count))
             
           
             # Case when r
             if (self.base == received_packet.acknum):
-                    print("base = acknum")
+                    # print("base = acknum")
                     # print("When base = acknum buffer state:")
                     # print(self.c_b.read_all())
                     # Packet removed
@@ -151,7 +151,7 @@ class S_sender:
                     
             # Firt case: Received ACK > expected ACK 
             if (self.base < received_packet.acknum):
-                print("base < acknum")
+                # print("base < acknum")
                 # Update the circular buffer based on the 
                 # received acknowledgment number using pop().
                 # Go-Back-N uses cumulative ACKs meaning that more than 
@@ -168,7 +168,7 @@ class S_sender:
             # Second case: Received ACK that is smaller than base but
             # in sliding window (eg: base:3, ack: 0)
             elif (self.base > received_packet.acknum) and (received_packet.acknum in self.seqnum_list):
-                print("base > acknum")
+                # print("base > acknum")
                 # for i in range(self.base, ((received_packet.acknum + 9) - self.base + 2)):
                 for i in range(self.base, ((self.c_b.max + 1) - self.base + 2)):
                     # Packet removed
@@ -183,10 +183,7 @@ class S_sender:
             # when ACK received
             # print("Base: " + str(self.base))
             self.base = (received_packet.acknum + 1) % 9
-
-            print("Base after increment: " + str(self.base))
-
-            
+             
             # If no outstanding unACKed packets, then timer is removed
             if (self.base == self.seq):
                 evl.remove_timer() 
@@ -224,10 +221,11 @@ class S_sender:
         
         # Do not need a timer for each packet in window 
 
-        # But there may be outstanding unACK paackets in network 
+        
+        # But there may be outstanding unACK packets in network 
         # (need think about how to use one timer)
-        print("In handle timer")
 
+        # print("In handle timer")
         evl.start_timer(self.entity, self.estimated_rtt)
         # TODO: Send all the unACKed packets in the circular buffer.
 
@@ -238,12 +236,20 @@ class S_sender:
         # index = self.seqnum_list.index(self.base - 1)
         # index2 = self.seqnum_list.index(self.seq)
         # for i in range(index, index2 + 1:
+        # print("Buffer size in handle timer: " + str(self.c_b.count))
+        # print("Window state:")
+        # print(self.seqnum_list)
+        # print("~~Base in handle timer: " + str(self.base))
+        # print("~~Seqin handle timer: " + str(self.seq))
         for i in range(self.c_b.count):
+            # print("Send packet to circular buffer")
             to_layer_three(self.entity, self.c_b.read_all()[i])
             sim.totalMsgSent+=1 
             sim.retransmittedData+=1
             sim.retransmittedTotal+=1
 
         return
+    
+
 
 a = S_sender()
