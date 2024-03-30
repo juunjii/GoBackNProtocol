@@ -25,9 +25,6 @@ class S_sender:
         # The circular buffer that will store any outstanding and 
         # unacknowledged packets.
         self.c_b = circular_buffer(8)
-
-
-        # TODO: Initialize any other useful class variables you can think of.
         
         # First sent but unACKed pkt, move forward when ACK'ed
         # Expected ACK 
@@ -36,7 +33,6 @@ class S_sender:
         self.window= []
         # Store package seq num in list 
         self.seqnum_list = []
-
 
         return
 
@@ -50,51 +46,30 @@ class S_sender:
         - message : msg
             - The message the Sender received from layer 5.
         '''
-        # Check the FSM to know the actions to take and review section 2.5.2 
-        # Software Interfaces in the Project Instructions for how to use each 
-        # method.
-        # TODO: Implement the output function as mentioned in the FSM to send 
-        # the message to the receiver if the circular buffer isn't full. If it 
-        # is, then drop the message and update your variables and indicate 
-        # that in your output and update the statistics counters accordingly.
-        
-
-        # Buffer is space of window 
-
-        # Only send new packets when there is space in window 
-        # Send messages up to window size
-        # Circular buffer is not full, send message to receiver 
+      
+        # Only send new packets when there is space in window  
         if ((not self.c_b.isfull())):
-            # print("Buffer size when send to layer3: " + str(self.c_b.count))
             # Make packet with message and sequence number 
             new_packet = packet(seqnum = self.seq, payload = message)
-            # print("Sequence number of current packet: " + str(self.seq))
             # Send the packet to the Receiver.
             to_layer_three(self.entity, new_packet)
             sim.totalMsgSent +=1
+            # Add packet to circular buffer
             self.c_b.push(new_packet) 
-            # print("Buffer size after adding new packet: " + str(self.c_b.count))
-           
-        
+            
+            # Sending new packet 
             if (self.base == self.seq):
                 # Timer for oldest transmitted but not yet ACKed packet 
                 evl.start_timer(self.entity, self.estimated_rtt)
 
             # Sequence number of next packet to be sent 
             self.seq = (self.seq + 1) % 9
-            # print("Sequence number of next packet to send: " + str(self.seq))
 
-          
-            
-        # Drop message when sender is waiting for an ACK or the buffer is full (pg 11)
-        # Extra credit to buffer new messages when window is full 
+        # Drop message when sender is waiting for an ACK or the buffer is full 
         else:
             print("buffer is full, new message is dropped: " + message.data)
             sim.droppedData+=1
             sim.droppedTotal+=1     
-
-
-
         return    
         
             
@@ -107,83 +82,36 @@ class S_sender:
         ----------
         - received_packet : packet
             - The received packet that was sent by the Receiver.
-        '''
-        # Check the FSM to know the actions to take and review section 2.5.2 
-        # Software Interfaces in the Project Instructions for how to use each 
-        # method.
-        # TODO: Verify the received packet's checksum to make sure that it's
-        # uncorrupted and it's acknowledgment number to see whether it is 
-        # within the Sender's window. Update the circular buffer based on the 
-        # received acknowledgment number using pop(). Go-Back-N uses cumulative 
-        # ACKs meaning that more than one packet may need to be removed 
-        # from the circular buffer.
-
-        # Use read_all and form actual window 
-        # and compare sequence number of packets 
-        
-        # Verify the received packet's checksum to make sure that it's
-        # uncorrupted and it's acknowledgment number to see whether it is 
-        # within the Sender's window.
-          # print("Entered S_input")
+        '''       
         
         window = self.c_b.read_all() # Window is list of packets 
-        # Store package seq num in list 
-        # print("window: ")
-        # print(window)
+        # List of packet's sequence numbers in window
         self.seqnum_list = [package.seqnum for package in window] 
-        # print("seqnum_list: " + str(self.seqnum_list))
-        # print("Length of seqnum_list: " + str(len(self.seqnum_list)))
-        
+      
         if (received_packet.checksum == received_packet.get_checksum()) and (received_packet.acknum in self.seqnum_list):
-            # print("ACK received: " + str(received_packet.acknum))
-            # print("Circular buffer size: " + str(self.c_b.count))
-            
-          
-            # Case when r
-            if (self.base == received_packet.acknum):
-                    # print("base = acknum")
-                    # print("When base = acknum buffer state:")
-                    # print(self.c_b.read_all())
-                    # Packet removed
-                    self.c_b.pop()
-                    # print("When base = acknum buffer after pop state:")
-                    # print(self.c_b.read_all())
-                    
-            # Firt case: Received ACK > expected ACK 
-            if (self.base < received_packet.acknum):
-                # print("base < acknum")
-                # Update the circular buffer based on the 
-                # received acknowledgment number using pop().
+
+            if (self.base == received_packet.acknum):      
+                self.c_b.pop()
+                
+            # Received ACK > expected ACK 
+            elif (self.base < received_packet.acknum):
+                # Update the circular buffer based on the received acknowledgment number
                 # Go-Back-N uses cumulative ACKs meaning that more than 
                 # one packet may need to be removed from the circular buffer.
                 for i in range(self.base, received_packet.acknum + 1):
-                    # Packet removed
-                    # print("First case buffer state:")
                     self.c_b.pop()
-                    # print("First case buffer after pop state:")
-                    # print(self.c_b.read_all())
-
-                    # print(self.c_b.read_all())
-                
-            # Second case: Received ACK that is smaller than base but
-            # in sliding window (eg: base:3, ack: 0)
+                    
+            # Received ACK that is smaller than base but in sliding window
             elif (self.base > received_packet.acknum) and (received_packet.acknum in self.seqnum_list):
-                # print("base > acknum")
-                # for i in range(self.base, ((received_packet.acknum + 9) - self.base + 2)):
                 for i in range(self.base, ((self.c_b.max + 1) - self.base + 2)):
-                    # Packet removed
-                    # print("Second case buffer state:")
                     self.c_b.pop()
-                    # print("Second case buffer after pop state:")
-                    # print(self.c_b.read_all())
-                    # print(self.c_b.read_all())
-
-
-            # Base increased to next expected sequence number 
-            # when ACK received
-            # print("Base: " + str(self.base))
+            
+            # Base increased to next expected sequence number when ACK received
             self.base = (received_packet.acknum + 1) % 9
-             
+            
+
+            # There may be outstanding unACK packets in network 
+            # To handle: 
             # If no outstanding unACKed packets, then timer is removed
             if (self.base == self.seq):
                 evl.remove_timer() 
@@ -193,7 +121,6 @@ class S_sender:
                 evl.remove_timer()
                 evl.start_timer(self.entity, self.estimated_rtt)
         
-        # Covers dup ACK num case? 
         else:  
             # When receive wrong ACK num or corruption from packet 
             sim.droppedAck+=1
@@ -203,8 +130,6 @@ class S_sender:
             if (received_packet.checksum != received_packet.get_checksum()):
                 sim.corruptedAck+=1
                 sim.corruptedTotal+=1
-
-    
         return
 
 
@@ -213,36 +138,11 @@ class S_sender:
             is triggered, then it means that an ACK for any of the most 
             recently sent packets wasn't received by the Sender in time, so 
             all currently outstanding and unacknowledged packet needs to be 
-            retransmitted. '''
-        # Check the FSM to know the actions to take and review section 2.5.2 
-        # Software Interfaces and 2.5.4 Helpful Hints in the Project Instructions
-        # for how to use each method and how to handle timers.
-
-        
+            retransmitted. '''  
         # Do not need a timer for each packet in window 
-
-        
-        # But there may be outstanding unACK packets in network 
-        # (need think about how to use one timer)
-
-        # print("In handle timer")
         evl.start_timer(self.entity, self.estimated_rtt)
-        # TODO: Send all the unACKed packets in the circular buffer.
-
-        # What are unACKed packets in the cb?
-        # between base and seq num 
-
-
-        # index = self.seqnum_list.index(self.base - 1)
-        # index2 = self.seqnum_list.index(self.seq)
-        # for i in range(index, index2 + 1:
-        # print("Buffer size in handle timer: " + str(self.c_b.count))
-        # print("Window state:")
-        # print(self.seqnum_list)
-        # print("~~Base in handle timer: " + str(self.base))
-        # print("~~Seqin handle timer: " + str(self.seq))
+        # Send all the unACKed packets in the circular buffer.
         for i in range(self.c_b.count):
-            # print("Send packet to circular buffer")
             to_layer_three(self.entity, self.c_b.read_all()[i])
             sim.totalMsgSent+=1 
             sim.retransmittedData+=1
@@ -250,6 +150,5 @@ class S_sender:
 
         return
     
-
 
 a = S_sender()
